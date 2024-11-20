@@ -1,0 +1,13 @@
+[package]
+name = "API"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-multipart = "0.4"
+actix-web = "4.0"
+image = "0.24"
+futures-util = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+base64 = "0.22.1"
+serde_json = "1.0.133"
