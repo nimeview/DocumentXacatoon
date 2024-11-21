@@ -21,36 +21,31 @@ class Database:
         self._client = MongoClient(host)
         self._db = self._client[name_db]
 
-    def insert_db_image(self, data: list[dict]) -> None:
+    def insert_db_image(self, data: dict) -> None:
         '''
             Метод сохраняет в коллекцию images тайлы.
 
             Пример входного json(data):
-            [
             {
                 "name" : ...,
                 "binary" : [ ... ],
                 "x" : ...,
                 "y" : ...
-            },
-            { ... },
-            ...
-            ]
+            }
             :param data Список словарей тайлов картинок.
         '''
-        if not isinstance(data, list):
+        if not isinstance(data, dict):
             raise ValueError(f"Ожидание list, получен {type(data)}")
-        for tiles in data:
-            if self._db["images"].find_one({"name": tiles["name"]}):
-                raise KeyError("Такая картинка уже есть")
-            self._db["images"].insert_one(
-                    {
-                        "name": tiles["name"],
-                        "binary": tiles["binary"],
-                        "x": tiles["x"],
-                        "y": tiles["y"]
-                    }
-                )
+        if self._db["images"].find_one({"name": data["name"]}):
+            raise KeyError("Такая картинка уже есть")
+        self._db["images"].insert_one(
+                {
+                    "name": data["name"],
+                    "binary": data["binary"],
+                    "x": data["x"],
+                    "y": data["y"]
+                }
+            )
 
     def insert_db_user(self, data: dict) -> None:
         '''
@@ -65,10 +60,10 @@ class Database:
             }
             :param data: Cловарь с данными нового пользователя.
         '''
-        if not isinstance(data, list):
-            raise ValueError(f"Ожидание list, получен {type(data)}")
+        if not isinstance(data, dict):
+            raise ValueError(f"Ожидание dict, получен {type(data)}")
         if self.is_login_user(data["login"]):
-            raise KeyError("Пользователь существует")
+            return False
         self._db["users"].insert_one(
                 {
                     "_id": data["login"],
@@ -76,19 +71,19 @@ class Database:
                     "roots": data["roots"]
                 })
 
-    def is_login_user(self, data: dict) -> bool:
+    def is_login_user(self, login: str) -> bool:
         '''
         Метод находит существующего пользователя по login
-        
+
         :param login: Словарь с логином, который пользователь вводит
         Пример входного json(data):
         { "login": ...}
         '''
-        if self._db["users"].find_one({"_id": data["login"]}):
+        if self._db["users"].find_one({"_id": login}):
             return True
         return False
-    
-    def is_correct_login(self, data: dict):
+
+    def is_correct_login(self, data: dict) -> bool:
         '''
         Метод сверяет вводимый логин и пароль с бд
 
@@ -99,9 +94,10 @@ class Database:
         "password": ...
         }
         '''
-        if self._db["users"].find_one({
-            "_id": data["login"],
-            "password": data["password"]
-            }):
+        if self._db["users"].find_one(
+                {
+                    "_id": data["login"],
+                    "password": data["password"]}
+                ):
             return True
-        raise KeyError("Неверный пароль или логин")
+        return False
