@@ -1,0 +1,11 @@
+/Users/artur/Desktop/DocumentXacatoon/Server/API/target/release/deps/libfdeflate-ffc028b6365ed311.rmeta: /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/lib.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/compress.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/decompress.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/huffman.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/tables.rs
+
+/Users/artur/Desktop/DocumentXacatoon/Server/API/target/release/deps/libfdeflate-ffc028b6365ed311.rlib: /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/lib.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/compress.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/decompress.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/huffman.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/tables.rs
+
+/Users/artur/Desktop/DocumentXacatoon/Server/API/target/release/deps/fdeflate-ffc028b6365ed311.d: /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/lib.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/compress.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/decompress.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/huffman.rs /Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/tables.rs
+
+/Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/lib.rs:
+/Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/compress.rs:
+/Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/decompress.rs:
+/Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/huffman.rs:
+/Users/artur/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fdeflate-0.3.6/src/tables.rs:

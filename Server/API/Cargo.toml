@@ -6,8 +6,14 @@ edition = "2021"
 [dependencies]
 actix-multipart = "0.4"
 actix-web = "4.0"
-image = "0.24"
+image = { version = "0.24", features = ["tiff"] }
 futures-util = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 base64 = "0.22.1"
 serde_json = "1.0.133"
+rayon = "1.10.0"
+tempfile = "3.14.0"
+flate2 = "1.0.35"
+
+
+
