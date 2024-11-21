@@ -3,7 +3,7 @@ use std::net::TcpStream;
 use flate2::{Compression, write::GzEncoder};
 use crate::upload::Tile;
 
-pub async fn send_tcp(tiles: &Vec<Tile>) -> std::io::Result<()> {
+pub async fn send_tcp(tiles: Tile) -> std::io::Result<()> {
     let address = "127.0.0.1:1234";
     let mut stream = TcpStream::connect(address)?;
 

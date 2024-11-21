@@ -1,22 +1,21 @@
-use std::io::Cursor;
-use std::sync::Arc;
 use actix_multipart::Multipart;
 use actix_web::{HttpResponse, Responder};
 use futures_util::StreamExt;
-use image::{GenericImageView, io::Reader};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use serde::Serialize;
+use image::GenericImageView;
+use std::io::{Cursor};
 use crate::connection_server::send_tcp;
-#[derive(Debug, Serialize)]
+
+// Структура для представления тайла
+#[derive(Debug, serde::Serialize)]
 pub struct Tile {
-    name: String,
-    binary: Vec<u8>,
-    x: u32,
-    y: u32,
+    pub name: String,
+    pub binary: Vec<u8>,
+    pub x: u32,
+    pub y: u32,
 }
 
+// Главная асинхронная функция для обработки изображения
 pub async fn process_image(mut payload: Multipart) -> impl Responder {
-    let mut tiles: Vec<Tile> = vec![];
     let mut image_name = String::new();
 
     while let Some(Ok(mut field)) = payload.next().await {
@@ -37,12 +36,10 @@ pub async fn process_image(mut payload: Multipart) -> impl Responder {
                         image_data.extend_from_slice(&chunk);
                     }
 
-                    match process_large_image(&image_data, 1024, 1024, image_name.clone()).await {
-                        Ok(result_tiles) => tiles = result_tiles,
-                        Err(e) => {
-                            return HttpResponse::InternalServerError()
-                                .body(format!("Failed to process image: {}", e));
-                        }
+                    // Обработка изображения
+                    if let Err(e) = process_large_image(&image_data, 1024, 1024, &image_name).await {
+                        return HttpResponse::InternalServerError()
+                            .body(format!("Failed to process image: {}", e));
                     }
                 }
                 _ => {}
@@ -50,51 +47,65 @@ pub async fn process_image(mut payload: Multipart) -> impl Responder {
         }
     }
 
-    HttpResponse::Ok().json(serde_json::json!(tiles))
-    //send_tcp(&tiles)
+    HttpResponse::Ok().body("Image processed successfully")
 }
 
+// Асинхронная функция для обработки большого изображения
 async fn process_large_image(
     image_data: &[u8],
     tile_width: u32,
     tile_height: u32,
-    image_name: String,
-) -> Result<Vec<Tile>, Box<dyn std::error::Error>> {
+    image_name: &str
+) -> Result<(), Box<dyn std::error::Error>> {
+    // Декодируем изображение из памяти
+    let render = image::load_from_memory(image_data)?;
 
-    let reader = Reader::new(Cursor::new(image_data))
-        .with_guessed_format()?
-        .decode()?;
+    // Получаем размеры изображения
+    let (width, height) = render.dimensions();
+    let mut buffer = Vec::new();
 
-    let (width, height) = reader.dimensions();
+    // Преобразуем изображение в формат RGB
+    let rgba_image = render.to_rgb8();
+    buffer.extend_from_slice(&rgba_image);
 
-    let coordinates = Arc::new(
-        (0..height)
-            .step_by(tile_height as usize)
-            .flat_map(move |h| {
-                (0..width)
-                    .step_by(tile_width as usize)
-                    .map(move |w| (w, h))
-            })
-            .collect::<Vec<_>>(),
-    );
+    // Разбиваем изображение на тайлы по вертикали и горизонтали
+    for y in (0..height).step_by(tile_height as usize) {
+        for x in (0..width).step_by(tile_width as usize) {
+            let mut tile_buffer = Vec::new();
+            // Для каждой строки изображения, относящейся к текущему тайлу, копируем данные в буфер
+            for row in y..(y + tile_height).min(height) {
+                let start = (row * width + x) as usize * 3;
+                let end = ((row * width + x + tile_width.min(width - x)) as usize) * 3;
+                tile_buffer.extend_from_slice(&buffer[start..end]);
+            }
 
-    let tiles: Vec<Tile> = coordinates
-        .par_iter()
-        .map(|&(x, y)| {
-            let sub_image = reader.view(x, y, tile_width.min(width - x), tile_height.min(height - y));
-            let tile = sub_image.to_image();
+            // Создаем изображение для текущего тайла
+            let tile_image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+                image::ImageBuffer::from_raw(
+                    tile_width.min(width - x),
+                    tile_height.min(height - y),
+                    tile_buffer,
+                )
+                    .ok_or("Failed to create tile")?;
 
-            let mut buffer = Cursor::new(Vec::new());
-            tile.write_to(&mut buffer, image::ImageOutputFormat::Tiff).unwrap();
+            let mut output = Cursor::new(Vec::new());
+            tile_image.write_to(&mut output, image::ImageOutputFormat::Png)?;
 
-            Tile {
-                name: image_name.clone(),//структура занятий и водный режим
-                binary: buffer.into_inner(),
+            send_tile(Tile {
+                name: image_name.to_string(),
+                binary: output.into_inner(),
                 x,
                 y,
-            }
-        })
-        .collect();
+            })
+                .await?;
+        }
+    }
 
-    Ok(tiles)
+    Ok(())
+}
+
+// Асинхронная функция для отправки тайла через TCP
+async fn send_tile(tile: Tile) -> Result<(), Box<dyn std::error::Error>> {
+    send_tcp(tile).await?;
+    Ok(())
 }

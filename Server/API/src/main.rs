@@ -23,3 +23,4 @@ async fn main() -> std::io::Result<()> {
         .run()
         .await
 }
+//структура занятий и водный режим
