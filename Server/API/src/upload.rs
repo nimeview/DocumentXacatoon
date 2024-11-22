@@ -3,6 +3,7 @@ use actix_web::{HttpResponse, Responder};
 use futures_util::StreamExt;
 use image::{ImageDecoder};
 use std::io::{Cursor};
+use actix_web::web::delete;
 
 // Структура для представления тайла
 #[derive(Debug, serde::Serialize)]
@@ -92,9 +93,9 @@ async fn process_large_image(
                 y,
             })
                 .await?;
+
         }
     }
-    drop(buffer);
 
     Ok(())
 }
