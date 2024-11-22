@@ -1,5 +1,6 @@
 mod upload;
 mod connection_server;
+mod users;
 
 use crate::upload::process_image;
 

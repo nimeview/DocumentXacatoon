@@ -94,6 +94,7 @@ async fn process_large_image(
                 .await?;
         }
     }
+    drop(buffer);
 
     Ok(())
 }
