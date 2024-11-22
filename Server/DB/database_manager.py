@@ -35,8 +35,12 @@ class Database:
             :param data Список словарей тайлов картинок.
         '''
         if not isinstance(data, dict):
-            raise ValueError(f"Ожидание list, получен {type(data)}")
-        if self._db["images"].find_one({"name": data["name"]}):
+            raise ValueError(f"Ожидание dict, получен {type(data)}")
+        if self._db["images"].find_one({
+            "name": data["name"],
+            "x": data["x"],
+            "y": data["y"]}
+            ):
             raise KeyError("Такая картинка уже есть")
         self._db["images"].insert_one(
                 {
@@ -101,3 +105,25 @@ class Database:
                 ):
             return True
         return False
+
+    def get_tiles(self, name: str, args: tuple):
+        '''
+        Метод возвращает список словарей с словарями нужных тайлов.
+
+        :param name: Название нужного изображения
+        :param args: Кортеж с координатами.
+
+        :return: Список словарей вида { "binary": [ ... ], "x": ..., "y": ...}.
+        Пример при тайлах 256х256:
+        >> args = (0, 0, 1024, 1024)
+        << "список из 16 словарей"
+        '''
+        return list(self._db["images"].find({
+            "name": name,
+            "x": {"$gte": args[0], "$lte": args[2]},
+            "y": {"$gte": args[1], "$lte": args[3]}
+            },
+            {
+            "_id": 0,
+            "name": 0,
+            }))
