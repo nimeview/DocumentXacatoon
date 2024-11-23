@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+import subprocess
 
 
 class Database:
@@ -10,6 +11,7 @@ class Database:
     name_db (str): имя базы данных.
 
     Методы:
+    create_backup(): содание бэкапа
     insert_db_image(): создание объектов в коллекцию images.
     insert_db_user(): создание объектов в коллекцию users.
     insert_db_icon(): создание объектов в коллекцию icons.
@@ -17,11 +19,15 @@ class Database:
     is_correct_login(): проверка на правильность логина и пароля.
     get_tiles(): возврат тайлов заданным условием.
     get_icon(): возврат изображения по имени.
+    create_backup(): сохранение бекап
+    restore_backup(): загрузка бекапа
     '''
 
     def __init__(self, host: str, name_db: str) -> None:
-        self._client = MongoClient(host)
-        self._db = self._client[name_db]
+        self._URI = host
+        self._db_name = name_db
+        self._client = MongoClient(self._URI)
+        self._db = self._client[self._db_name]
 
         self._images = self._db["images"]
         self._users = self._db["users"]
@@ -30,6 +36,59 @@ class Database:
         self._images.create_index([("name", 1), ("x", 1), ("y", 1)])
         self._users.create_index([("login", 1), ("password", 1)])
         self._icons.create_index([("_id", 1)])
+
+    def restore_backup(self, backup_dir: str) -> None:
+        '''
+        Метод восстанавливает базу данных из бэкапа,
+        созданного с использованием mongodump.
+
+        Параметры:
+        :backup_dir: путь к директории с бэкапом.
+        '''
+        restore_command = [
+            "sudo", "mongorestore",
+            "--uri", self._URI,
+            "--db", self._db_name,
+            "--drop",
+            f"{backup_dir}/backup_{self._db_name}_1"
+        ]
+        try:
+            subprocess.run(restore_command, check=True)
+            print(f"Бэкап базы данных {self._db_name} успешно восстановлен.")
+        except subprocess.CalledProcessError as e:
+            print(f"Ошибка при восстановлении бэкапа базы данных: {e}")
+
+    def create_backup(self) -> None:
+        '''
+        Метод сохраняет бекап бд.
+
+        Название бд бекапа: 'имя бд'_BACKUP
+        '''
+        '''
+        Метод сохраняет бекап базы данных с использованием mongodump.
+
+        Название бд бекапа: 'имя бд'_BACKUP
+        '''
+        backup_dir = "/path/to/backup_directory"
+        command1 = [
+            "sudo", "mongodump",
+            "--uri", self._URI,
+            "--db", self._db_name,
+            "--out", f"{backup_dir}/backup_{self._db_name}_1",
+            "--gzip"
+        ]
+        command2 = [
+            "sudo", "mongodump",
+            "--uri", self._URI,
+            "--db", self._db_name,
+            "--out", f"{backup_dir}/backup_{self._db_name}_2",
+            "--gzip"
+        ]
+        try:
+            subprocess.run(command1, check=True)
+            subprocess.run(command2, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Ошибка при создании бэкапа базы данных: {e}")
 
     def insert_db_image(self, data: dict) -> None:
         '''
