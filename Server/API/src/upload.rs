@@ -49,7 +49,7 @@ pub async fn process_image(mut payload: Multipart) -> impl Responder {
         return HttpResponse::InternalServerError()
             .body(format!("Failed to process image: {}", e));
     }
-
+    println!("image processing successful!");
     HttpResponse::Ok().body("Tiles processed and sent successfully.")
 }
 
@@ -59,6 +59,7 @@ async fn process_large_image(
     tile_height: u32,
     image_name: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    println!("processing large image");
     let reader = Reader::new(Cursor::new(image_data))
         .with_guessed_format()?
         .decode()?;
