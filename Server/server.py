@@ -1,6 +1,6 @@
 import socket
 import json
-from database_manager import Database
+from DB.database_manager import Database
 
 db = Database(host="mongodb://localhost:27017/", name_db="my_database")
 
