@@ -7,15 +7,15 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Tile {
-    _type: String,
-    name: String,
-    binary: Vec<u8>,
-    x: u32,
-    y: u32,
+    pub _type: String,
+    pub name: String,
+    pub binary: Vec<u8>,
+    pub x: u32,
+    pub y: u32,
 }
 
 async fn send_tile(tile: Tile) -> Result<(), Box<dyn std::error::Error>> {
-    crate::connection_server::send_tile(tile).await?;
+    println!("sending tile");
     Ok(())
 }
 
