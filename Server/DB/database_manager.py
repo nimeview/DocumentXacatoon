@@ -9,17 +9,27 @@ class Database:
     host (str): URI подключение.
     name_db (str): имя базы данных.
 
-
     Методы:
     insert_db_image(): создание объектов в коллекцию images.
     insert_db_user(): создание объектов в коллекцию users.
-    is_login_user(): проверка на существование логина пользователя
-    is_correct_login(): проверка на правильность логина и пароля
+    insert_db_icon(): создание объектов в коллекцию icons.
+    is_login_user(): проверка на существование логина пользователя.
+    is_correct_login(): проверка на правильность логина и пароля.
+    get_tiles(): возврат тайлов заданным условием.
+    get_icon(): возврат изображения по имени.
     '''
 
     def __init__(self, host: str, name_db: str) -> None:
         self._client = MongoClient(host)
         self._db = self._client[name_db]
+
+        self._images = self._db["images"]
+        self._users = self._db["users"]
+        self._icons = self._db["icons"]
+
+        self._images.create_index([("name", 1), ("x", 1), ("y", 1)])
+        self._users.create_index([("login", 1), ("password", 1)])
+        self._icons.create_index([("_id", 1)])
 
     def insert_db_image(self, data: dict) -> None:
         '''
@@ -36,13 +46,13 @@ class Database:
         '''
         if not isinstance(data, dict):
             raise ValueError(f"Ожидание dict, получен {type(data)}")
-        if self._db["images"].find_one({
+        if self._images.find_one({
             "name": data["name"],
             "x": data["x"],
             "y": data["y"]}
             ):
             raise KeyError("Такая картинка уже есть")
-        self._db["images"].insert_one(
+        self._images.insert_one(
                 {
                     "name": data["name"],
                     "binary": data["binary"],
@@ -68,7 +78,7 @@ class Database:
             raise ValueError(f"Ожидание dict, получен {type(data)}")
         if self.is_login_user(data["login"]):
             return False
-        self._db["users"].insert_one(
+        self._users.insert_one(
                 {
                     "_id": data["login"],
                     "password": data["password"],
@@ -83,7 +93,7 @@ class Database:
         Пример входного json(data):
         { "login": ...}
         '''
-        if self._db["users"].find_one({"_id": login}):
+        if self._users.find_one({"_id": login}):
             return True
         return False
 
@@ -98,7 +108,7 @@ class Database:
         "password": ...
         }
         '''
-        if self._db["users"].find_one(
+        if self._users.find_one(
                 {
                     "_id": data["login"],
                     "password": data["password"]}
@@ -106,7 +116,7 @@ class Database:
             return True
         return False
 
-    def get_tiles(self, name: str, args: tuple):
+    def get_tiles(self, name: str, args: tuple) -> list:
         '''
         Метод возвращает список словарей с словарями нужных тайлов.
 
@@ -118,7 +128,7 @@ class Database:
         >> args = (0, 0, 1024, 1024)
         << "список из 16 словарей"
         '''
-        return list(self._db["images"].find({
+        return list(self._images.find({
             "name": name,
             "x": {"$gte": args[0], "$lte": args[2]},
             "y": {"$gte": args[1], "$lte": args[3]}
@@ -127,3 +137,28 @@ class Database:
             "_id": 0,
             "name": 0,
             }))
+
+    def insert_db_icon(self, data: dict) -> None:
+        '''
+        Метод сохраняет в бд сжатые изображения.
+
+        :param data: словарь с метаданными.
+        Пример входного json(data):
+        {
+            "name": ...,
+            "binary": [ ... ]
+        }
+        '''
+        self._icons.insert_one({
+            "_id": data["name"],
+            "binary": data["binary"]
+            })
+
+    def get_icon(self, name: str) -> dict:
+        '''
+        Метод возвращает бинарник иконки.
+
+        :param name: имя картинки.
+        :return: Словарь с бинарником ("binary").
+        '''
+        return dict(self._icons.find_one({"_id": name}, {"_id": 0}))
