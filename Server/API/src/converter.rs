@@ -1,11 +1,11 @@
 use actix_web::HttpResponse;
-use image::{DynamicImage, ImageBuffer, ImageOutputFormat, ImageFormat, GenericImageView};
+use image::{DynamicImage, ImageBuffer, ImageOutputFormat, ImageFormat};
 use std::io::Cursor;
 
 pub fn binary_to_image(binary_data: Vec<u8>) -> Result<DynamicImage, Box<dyn std::error::Error>> {
     let cursor = Cursor::new(binary_data);
 
-    let image = image::load(cursor, ImageFormat::Tiff)?;
+    let image = image::load(cursor, ImageFormat::Png)?;
 
     Ok(image)
 }
@@ -20,7 +20,7 @@ pub fn binary_to_tiff(data: Vec<u8>, width: u32, height: u32) -> HttpResponse {
 
     let mut tiff_data = Vec::new();
     if image.write_to(&mut Cursor::new(&mut tiff_data), ImageOutputFormat::Tiff).is_err() {
-        return HttpResponse::InternalServerError().body("Failed to convert image to TIFF");
+        return HttpResponse::InternalServerError().body("Failed to convert image to PNG");
     }
 
     HttpResponse::Ok()

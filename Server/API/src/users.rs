@@ -9,6 +9,7 @@ pub struct UserData {
 }
 
 pub async fn login_user(user_data: web::Json<UserData>) -> impl Responder {
+    println!("{:#?}", user_data);
     if let Err(e) = send_json(user_data, "login".to_string()).await {
         eprintln!("Error sending data to the server: {:?}", e);
         return HttpResponse::InternalServerError().body("Failed to login user");
@@ -17,6 +18,7 @@ pub async fn login_user(user_data: web::Json<UserData>) -> impl Responder {
     HttpResponse::Ok().body("User login")
 }
 pub async fn register_user(user_data: web::Json<UserData>) -> impl Responder {
+    println!("{:#?}", user_data);
     if let Err(e) = send_json(user_data, "register".to_string()).await {
         eprintln!("Error sending data to the server: {:?}", e);
         return HttpResponse::InternalServerError().body("Failed to register user");

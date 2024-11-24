@@ -15,7 +15,7 @@ pub struct Tile {
 }
 
 async fn send_tile(tile: Tile) -> Result<(), Box<dyn std::error::Error>> {
-    println!("sending tile");
+    crate::connection_server::send_tile(tile).await?;
     Ok(())
 }
 
