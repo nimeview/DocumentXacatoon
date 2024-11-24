@@ -5,10 +5,7 @@ import "./SbrosStyle.css";
 import Users from "./pages/User";
 import Pics from "./pages/Pics";
 import "./index.css";
-import Rentgen from "./pages/rentgeni";
-import MRT from "./pages/mrt";
 import { createSignal, onMount, createEffect } from 'solid-js';
-
 
   const [isOpen, setIsOpen] = createSignal(false);
   const options = [
@@ -41,21 +38,7 @@ const App = (props) => (
               <span className="text3d-1"><a href="/users">User agent</a></span>
             </div>
           </div>
-        </div>
-        <div className="sidebar">
-          <div class="dropdown">
-            <button class="dropdown-button" onClick={() => setIsOpen(!isOpen())}>
-              Доступные вам папки: {selectedValue() ? selectedValue().label : 'Выберите папку'}
-            </button>
-            <ul class={`dropdown-menu ${isOpen() ? 'open' : ''}`}>
-              {options.map((option) => (
-                <a href={option.href} key={option.label} class="dropdown-link" >
-                  <li onClick={() => setIsOpen(false)} >{option.label}</li>
-                </a>
-              ))}
-            </ul>
-          </div>
-        </div>
+        </div> 
         {props.children}
       </div>
     </div>  
@@ -71,9 +54,6 @@ render(
     <Router root={App}>
       <Route path="/users" component={Users} />
       <Route path="/" component={Pics} />
-      <Route path="/rentgeni" component={Rentgen} />
-      <Route path="/mrt" component={MRT} />
-      
     </Router>
   ),
   root

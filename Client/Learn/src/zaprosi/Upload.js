@@ -14,7 +14,7 @@ export const uploadImage = async (file) => {
         throw new Error('Ошибка при загрузке изображения');
       }
   
-      return await response.png(); // или просто вернуть response, если не нужно парсить
+      return await response.png(); // или просто вернуть response, если не нужно парсить http://localhost:3000
     } catch (error) {
       console.error('Ошибка:', error);
     }
