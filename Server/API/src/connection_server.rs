@@ -23,7 +23,7 @@ pub async fn send_json(user_data: Json<UserData>, _type: String) -> std::io::Res
          Host: {ADDRESS}\r\n\
          Content-Type: application/json\r\n\
          Content-Length: {}\r\n\
-         \r\n\
+         \r\n\r\n\
          {}",
         serialized.len(),
         serialized
@@ -42,12 +42,56 @@ pub async fn send_json(user_data: Json<UserData>, _type: String) -> std::io::Res
 pub async fn get_tile(tile_name: String, x: String, y: String) -> std::io::Result<Vec<u8>> {
     let mut stream = TcpStream::connect(ADDRESS)?;
 
+    let serialized = serde_json::to_string(&json!(
+        {
+            "_type": "get_tile",
+            "tile_name": tile_name,
+            "x": x,
+            "y": y,
+        }
+    ))
+        .expect("Failed to serialize tile");
+
     let request = format!(
-        "GET /data?name={}&x={}&y={} HTTP/1.1\r\n\
+        "GET /data? HTTP/1.1\r\n\
          Host: {ADDRESS}\r\n\
-         Connection: close\r\n\
-         \r\n",
-        tile_name, x, y
+         Connection-Type: application/json\r\n\
+         Content-Length: {}\r\n\
+         \r\n\
+         {}",
+        serialized.len(),
+        serialized
+    );
+
+    stream.write_all(request.as_bytes())?;
+
+    let mut response = Vec::new();
+    stream.read_to_end(&mut response)?;
+
+    Ok(response)
+}
+
+
+pub async fn get_icon(name: String) -> std::io::Result<Vec<u8>> {
+    let mut stream = TcpStream::connect(ADDRESS)?;
+
+    let serialized = serde_json::to_string(&json!(
+        {
+            "_type": "get_icon",
+            "name": name,
+        }
+    ))
+        .expect("Failed to serialize tile");
+
+    let request = format!(
+        "GET /data? HTTP/1.1\r\n\
+         Host: {ADDRESS}\r\n\
+         Connection-Type: application/json\r\n\
+         Content-Length: {}\r\n\
+         \r\n\
+         {}",
+        serialized.len(),
+        serialized
     );
 
     stream.write_all(request.as_bytes())?;
@@ -77,7 +121,7 @@ pub async fn send_tile(tile: Tile) -> std::io::Result<()> {
          Host: {ADDRESS}\r\n\
          Content-Type: application/json\r\n\
          Content-Length: {}\r\n\
-         \r\n\
+         \r\n\r\n\
          {}",
         serialized.len(),
         serialized
