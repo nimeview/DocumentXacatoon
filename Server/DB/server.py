@@ -1,78 +1,114 @@
 import socket
 import json
+import threading
 import time
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.bind(("localhost", 1234))
-sock.listen()
+from database_manager import Database
 
-print("Сервер запущен и слушает порт 1234...")
+db = Database('mongodb://localhost:27017/', 'Servise')
 
-while True:
+# Семофор для ограничения количества потоков
+max_threads = 20
+semaphore = threading.Semaphore(max_threads)
+
+def handle_client(conn):
+    start_time = time.time()  # Начало отсчета времени
+
     try:
-        print("Ожидание подключения...")
-        conn, address = sock.accept()
-        print(f"Подключено: {address}")
-        
-        # Читаем данные из сокета
-        request_data = conn.recv(1024).decode()
+        # Считывание потока данных
+        request_data = conn.recv(8192).decode()
+        print("Запрос получен: ", request_data)  # Логируем весь запрос
 
-
-        
-        # Разделяем заголовки и тело запроса
+        # Деление HTTP запроса на заголовок и тело
         if "\r\n\r\n" in request_data:
             headers, body = request_data.split("\r\n\r\n", 1)
         else:
             headers, body = request_data, ""
 
+        print("Тело запроса: ", body)  # Логируем тело запроса
 
-        # Ищем Content-Length в заголовках
-        content_length = None
-        for line in headers.split("\r\n"):
-            if line.lower().startswith("content-length:"):
-                content_length = int(line.split(":")[1].strip())
-                break
+        # Разбираем первую строку запроса, чтобы определить метод
+        request_line = headers.split("\r\n")[0]
+        method, path, _ = request_line.split()
 
-        
-        if content_length:
-            # Читаем дополнительные данные, если тело запроса больше
-            remaining_data = conn.recv(content_length - len(body)).decode()
-            body += remaining_data
-            print(f"Дополнительные данные получены: {remaining_data}")
-        
-        # Печатаем окончательное тело запроса
-        print(f"Полное тело запроса: {body}")
-
-        
+        # Разбираем JSON, если есть
         try:
-            # Преобразуем тело в JSON
             json_data = json.loads(body)
+            print("JSON данные: ", json_data)
+            if isinstance(json_data, list):
+                if len(json_data) > 0:
+                    json_data = json_data[0]  # Логируем разобранные данные
+        except json.JSONDecodeError:
+            json_data = {}
+            print("Ошибка при разборе JSON.")
 
-            print("Полученные данные (JSON):")
-            print(json.dumps(json_data, indent=4))
+        # Метод GET
+        if method == "GET":
+            if '_type' in json_data:
+                if json_data['_type'] == 'icon':
+                    icon_data = db.get_icon(json_data.get("name", ""))
+                    response_data = icon_data
+                elif json_data['_type'] == 'tile':
+                    print(json_data.get("args", ()))
+                    tiles = db.get_tiles(json_data.get("name", ""), json_data.get("args", ()))
+                    response_data = tiles
+                else:
+                    response_data = {"error": "Unknown _type"}
+            else:
+                response_data = {"error": "_type field missing"}
+            response_body = json.dumps(response_data)
+            response_headers = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+            response_headers += f"Content-Length: {len(response_body)}\r\n\r\n"
+            conn.sendall(response_headers.encode() + response_body.encode())
 
-        except json.JSONDecodeError as e:
-            print(f"Ошибка при разборе JSON: {e}")
-            json_data = {"error": "Invalid JSON format"}
-        
-        # Формируем ответ в формате JSON
-        response_data = {
-            "status": "ok",
-            "message": "Data received successfully",
-            "received_data": json_data
-        }
-        
-        response_body = json.dumps(response_data)
+        # Метод POST
+        elif method == "POST":
+            if '_type' in json_data:
+                if json_data['_type'] == 'image':
+                    db.insert_db_image(json_data)
+                    response_data = {"status": "success", "message": "Image inserted"}
+                elif json_data['_type'] == 'user':
+                    db.insert_db_user(json_data)
+                    response_data = {"status": "success", "message": "User inserted"}
+                else:
+                    response_data = {"error": "Unknown _type"}
+            else:
+                response_data = {"error": "_type field missing"}
+            response_body = json.dumps(response_data)
+            response_headers = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+            response_headers += f"Content-Length: {len(response_body)}\r\n\r\n"
+            conn.sendall(response_headers.encode() + response_body.encode())
 
-        # Отправляем ответ клиенту
-        conn.sendall(response_body.encode())
-        print("Ответ отправлен клиенту.")
-
-        # Закрываем соединение
-        conn.close()
-
+        # Ответ для других HTTP методов
+        else:
+            response_body = json.dumps({"error": "Method Not Allowed"})
+            response_headers = "HTTP/1.1 405 Method Not Allowed\r\nContent-Type: application/json\r\n"
+            response_headers += f"Content-Length: {len(response_body)}\r\n\r\n"
+            conn.sendall(response_headers.encode() + response_body.encode())
     except Exception as e:
         print(f"Ошибка при обработке запроса: {e}")
-        if conn:
-            conn.close()
+    finally:
+        # Закрытие соединения
+        conn.close()
 
-sock.close()
+        # Завершаем работу потока, выводим время выполнения
+        end_time = time.time()
+        print(f"Запрос выполнен за {end_time - start_time:.4f} секунд.")
+# Сервер на библиотеке SOCKET
+def server():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #AF_INET - Internet Protocol v4; SOCK_STREAM сокет для TCP запросов
+    sock.bind(("localhost", 1234)) # Привязка сокета к конкретному сетевому интерфейсу и номеру порта
+    sock.listen() # Прослушивание соединения
+
+    while True:
+        print("Ожидание подключения...")
+        conn, address = sock.accept()
+        print(f"Подключено: {address}")
+        
+        # Проверка на количество активных потоков
+        semaphore.acquire()  # Захват семафора, если достигнут предел, поток будет ожидать
+
+        # Запуск нового потока для обработки запроса
+        threading.Thread(target=handle_client, args=(conn,)).start()
+
+if __name__ == "__main__":
+    server()
